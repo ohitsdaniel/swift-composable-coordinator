@@ -1,0 +1,132 @@
+// AUTO-GENERATED: Do not edit
+% import string
+%{
+  letters = string.ascii_uppercase
+  combineCount = 5
+}%
+import SwiftUI
+
+% for i in range(1, combineCount+1):
+%{
+    # ABCD...
+    genericCharacters = letters[0:i]
+
+    # ABuilder: PathBuilder, AItem: View, BBuilder: PathBuilder, ...
+    nodeRequirements = ", ".join(map(lambda x: "{0}Builder: PathBuilder, {0}Item: View".format(x), genericCharacters))
+
+    # let nodeItemA: TabbedNodeItem<ABuilder, AItem>
+    nodeItems = "\n".join(map(lambda x: "  let nodeItem{0}: TabbedNodeItem<{0}Builder, {0}Item>".format(x), genericCharacters))
+
+    # _ a: TabbedNodeItem<ABuilder, AItem>,\n ...
+    parameters = ", ".join(map(lambda x: "_ nodeItem{0}: TabbedNodeItem<{0}Builder, {0}Item>".format(x), genericCharacters))
+}%
+public struct TabbedNode${genericCharacters}<${nodeRequirements}>: View {
+  @Environment(\.currentScreenID) private var screenID
+  @EnvironmentObject private var dataSource: Navigator.Datasource
+  @Environment(\.navigator) private var navigator
+
+${nodeItems}
+
+  public var body: some View {
+    TabView(selection: selection) {
+% for c in genericCharacters:
+      NavigationView {
+        if let tabContent = screen?.path(for: nodeItem${c}.tag)?.first, let content = nodeItem${c}.contentBuilder.build(
+          pathElement: tabContent
+        ) {
+          content
+            .environment(\.currentScreenID, tabContent.id)
+            .environment(\.parentScreenID, screenID)
+        }
+      }
+      .navigationViewStyle(StackNavigationViewStyle())
+      .environment(\.isInActiveTab, nodeItem${c}.tag == screen?.activeTab.id)
+      .tabItem { nodeItem${c}.tabItem }
+      .tag(nodeItem${c}.tag)
+      .navigationBarTitle("") // hide the outer navigation bar on the wrapping TabView
+      .navigationBarHidden(true)
+      .navigationBarBackButtonHidden(true)
+% if c != genericCharacters[i - 1]:
+
+% else:
+% end
+% end
+    }
+    .onReceive(
+      dataSource.$navigationTree,
+      perform: { path in
+        guard case let .tabbed(screen) = dataSource.navigationTree.component(for: screenID).current else {
+          return
+        }
+
+        // check if initialised, inactive tabs count should be (total tab count - 1)
+        guard screen.inactiveTabs.count != ${i - 1} else {
+          // Tab screen is correctly initialized
+          return
+        }
+
+        func isPresent(tag: AnyActivatable) -> Bool {
+          screen.activeTab.id == tag || screen.inactiveTabs.map(\.id).contains(tag)
+        }
+
+        let matchesAtLeastOneTabID = [
+% for c in genericCharacters:
+          isPresent(
+            tag: nodeItem${c}.tag
+% if c != genericCharacters[i - 1]:
+          ),
+% else:
+          )
+% end
+% end
+        ].filter { $0 }.count >= 1
+
+        guard matchesAtLeastOneTabID else {
+          // TabScreen does not match any of the provided IDs.
+          // Probably a different tab screen, therefore initialisation is skipped
+          return
+        }
+
+        // if the tag is not present, initialise the tab with the default content
+        let defaultContents = [
+% for c in genericCharacters:
+          isPresent(tag: nodeItem${c}.tag)
+          ? nil
+          : DefaultTabContent(
+            tag: nodeItem${c}.tag,
+            content: nodeItem${c}.defaultContent
+% if c != genericCharacters[i - 1]:
+          ),
+% else:
+          )
+% end
+%end
+        ].compactMap { $0 }
+
+        dataSource.initializeDefaultContents(for: screenID, contents: defaultContents)
+      }
+    )
+  }
+
+  private var screen: TabScreen? {
+    guard case let .tabbed(screen) = dataSource.navigationTree.component(for: screenID).current else {
+      return nil
+    }
+
+    return screen
+  }
+
+  private var selection: Binding<AnyActivatable> {
+    Binding(
+      get: { screen?.activeTab.id ?? nodeItemA.tag },
+      set: { newValue in
+        navigator.activate(newValue)
+      }
+    )
+  }
+}
+% if i != combineCount:
+
+% else:
+% end
+% end

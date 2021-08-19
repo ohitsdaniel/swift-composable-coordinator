@@ -48,14 +48,14 @@ final class PathBuilder_OnDismiss_TCATests: XCTestCase {
       environment: ()
     )
 
-    let sut = _PathBuilder { path -> Color? in .red }
+    let sut = _PathBuilder { _ in Color.red }
       .onDismiss(
-        send: { (screen: AnyScreen) in .anyScreen(screen)},
+        send: { (screen: AnyScreen) in .anyScreen(screen) },
         into: store
       )
 
     let content = sut
-      .build(pathElement: dataSource.path.component(for: nextID).current!)?
+      .build(pathElement: dataSource.navigationTree.component(for: nextID).current!)?
       .environment(\.parentScreenID, .root)
       .environmentObject(dataSource)
       .frame(width: 20, height: 20)
@@ -87,7 +87,7 @@ final class PathBuilder_OnDismiss_TCATests: XCTestCase {
       environment: ()
     )
 
-    let sut = _PathBuilder { path -> Color? in .red }
+    let sut = _PathBuilder { _ in Color.red }
       .onDismiss(
         of: TestScreen.self,
         send: .action,
@@ -95,7 +95,7 @@ final class PathBuilder_OnDismiss_TCATests: XCTestCase {
       )
 
     let content = sut
-      .build(pathElement: dataSource.path.component(for: nextID).current!)?
+      .build(pathElement: dataSource.navigationTree.component(for: nextID).current!)?
       .environment(\.parentScreenID, .root)
       .environmentObject(dataSource)
       .frame(width: 20, height: 20)
@@ -127,14 +127,14 @@ final class PathBuilder_OnDismiss_TCATests: XCTestCase {
       environment: ()
     )
 
-    let sut = _PathBuilder { path -> Color? in .red }
+    let sut = _PathBuilder { _ in Color.red }
       .onDismiss(
         send: { (screen: TestScreen) in Action.screen(screen) },
         into: store
       )
     
     let content = sut
-      .build(pathElement: dataSource.path.component(for: nextID).current!)?
+      .build(pathElement: dataSource.navigationTree.component(for: nextID).current!)?
       .environment(\.parentScreenID, .root)
       .environmentObject(dataSource)
       .frame(width: 20, height: 20)

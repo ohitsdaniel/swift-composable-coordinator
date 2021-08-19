@@ -4,8 +4,8 @@ import XCTest
 
 final class DeeplinkHandlerTests: XCTestCase {
   func test_handle_deeplink_replaces_path_if_deeplink_resolves() {
-    let resolvedPath = [
-      TestScreen(identifier: "first", presentationStyle: .push).eraseToAnyScreen()
+    let resolvedPath: ActiveNavigationPath = [
+      .screen(TestScreen(identifier: "first", presentationStyle: .push).eraseToAnyScreen())
     ]
 
     var replacePathInvocations = [Navigator.ReplacePathInvocation]()
